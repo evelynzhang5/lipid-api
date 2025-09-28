@@ -1,0 +1,7 @@
+steps:
+- name: gcr.io/cloud-builders/docker
+  args: ["build","-t","${_REGION}-docker.pkg.dev/$PROJECT_ID/lipid-api/lipid-api:${SHORT_SHA}","."]
+images:
+- "${_REGION}-docker.pkg.dev/$PROJECT_ID/lipid-api/lipid-api:${SHORT_SHA}"
+substitutions:
+  _REGION: us-central1
