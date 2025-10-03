@@ -1,1 +1,39 @@
-y
+# Builds & deploys the FastAPI service to Cloud Run (region: us-central1)
+substitutions:
+  _REGION: us-central1
+  _ARTIFACT_REPO: lipid-api            # your Artifact Registry repo name for the API
+  _SERVICE_NAME: lipid-api             # Cloud Run service name
+  _UPLOADS_BUCKET: lipid-inputs        # your uploads GCS bucket
+  _RESULTS_BUCKET: lipid-outputs       # your outputs GCS bucket
+  _WORKER_JOB_NAME: lipid-worker-job   # Cloud Run Job name for the worker
+
+
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      [
+        "build",
+        "-t",
+        "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPO}/${_SERVICE_NAME}:${SHORT_SHA}",
+        "."
+      ]
+
+  # Deploy to Cloud Run (HTTP service)
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: gcloud
+    args:
+      [
+        "run","deploy","${_SERVICE_NAME}",
+        "--image","${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPO}/${_SERVICE_NAME}:${SHORT_SHA}",
+        "--region","${_REGION}",
+        "--platform","managed",
+        "--allow-unauthenticated",
+        "--set-env-vars","FIRESTORE_PROJECT=$PROJECT_ID",
+        "--set-env-vars","RUN_REGION=${_REGION}",
+        "--set-env-vars","UPLOADS_BUCKET=${_UPLOADS_BUCKET}",
+        "--set-env-vars","RESULTS_BUCKET=${_RESULTS_BUCKET}",
+        "--set-env-vars","WORKER_JOB_NAME=${_WORKER_JOB_NAME}"
+      ]
+
+images:
+  - "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPO}/${_SERVICE_NAME}:${SHORT_SHA}"
